@@ -1,0 +1,108 @@
+Reactive Type of spring framework -
+Mono and Flux
+
+Mono is a publisher it implements publisher interface (it defines simple method i.e subscribe)
+Mono contains one or zero element
+
+Flux is a publisher it implements publisher interface
+Flux can contain zero or many elements
+
+
+==== Extracting Data From Mono (Mono Operations) ====
+
+--- For reference see PersonServiceImpl Test class
+
+By Blocking the mono object  (blocking is not preferable)
+ex -  Mono<person> personById = personService.getById(1);
+      Person person = personById.block();
+      System.out.println(person.toString());
+
+By Subscribing the Mono object
+ex - personById.subscribe(person -> System.out.println(person.toString())) ;
+
+By Using map
+
+ex - personById.map(person -> {
+//   only map will not work it put map in action it requires back pressure we use subscriber as below
+       return person.getFirstName;
+}).subscribe(firstName -> System.out.println("Name from map : "+ firstName));
+
+// here subscribe is putting back pressure by say the i name firstName
+
+
+
+==== Extracting Data From Flux (Flux Operations) ====
+
+By using blockFirst()
+ex-
+        Flux<Person> allPerson = personService.findAll();
+
+        // blockFirst gives first element and block last gives us the last element as allPerson is a flux
+        // blockLast gives last element from flux
+
+        Person person = allPerson.blockLast();
+        System.out.println(person.toString());
+
+
+By using subscribe
+
+ex- allPerson.subscribe(person -> {
+            System.out.println(person.toString());
+        });
+
+
+By converting flux to mono list
+ex -
+
+   Flux<Person> personFlux = personService.findAll();
+
+   Mono<List<Person>> personList = personFlux.collectList();
+   // This mono has list as object
+   // so in subscribe I am taking that object of list and using forEach to traverse through that
+
+   personList.subscribe(list -> {
+        list.forEach(person -> System.out.println(person.toString()));
+   });
+
+
+===== Filtering the objects =====
+
+We will see filtering objects out of a stream of flux objects
+As mono is 0 or 1 so there is no need of filtering the objects.
+
+ex -
+    Mono<Person> personByFirstNameFilter = gettingAllPerson.filter(person -> person.getLastName().equals("happy")).next();
+    personByFirstNameFilter.subscribe(System.out::println);
+
+next() ->
+Emit only the first item emitted by this Flux, into a new Mono. If called on an empty Flux, emits an empty Mono.
+it just fails silently whereas single gives exceptions
+
+
+Handling Error
+
+        Flux<Person> personFlux = personService.findAll();
+
+        final int id = 8;
+
+        Mono<Person> personMono = personFlux.filter(person -> person.getId() == id).single();
+
+        personMono.doOnError(throwable -> {
+                    System.out.println("Error Occurred. ");
+                }).onErrorReturn(Person.builder().build())      // returning the empty object of Person on error
+                .subscribe(person -> {
+                    System.out.println(person.toString());
+                });
+
+- single()
+    Expect and emit a single item from this Flux source or signal
+    NoSuchElementException for an empty source, or IndexOutOfBoundsException
+    for a source with more than one element.
+
+    Returns:
+    a Mono with the single item or an error signal
+
+
+To handle the error we have
+
+doOnError()  and onErrorReturn() methods
